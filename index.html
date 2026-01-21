@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dealer Locator</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+      body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+      #map { height: 100vh; width: 100vw; }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const map = L.map("map").setView([20, 0], 2);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+
+      const layer = L.layerGroup().addTo(map);
+
+      function popupHtml(d) {
+        return `
+          <div>
+            <strong>${d.name || ""}</strong><br/>
+            ${d.address ? `${d.address}<br/>` : ""}
+            ${d.phone ? `${d.phone}<br/>` : ""}
+            ${d.website ? `<a href="${d.website}" target="_blank" rel="noopener">Website</a>` : ""}
+          </div>
+        `;
+      }
+
+      async function loadDealers() {
+        const res = await fetch("/.netlify/functions/dealers");
+        const { dealers } = await res.json();
+
+        layer.clearLayers();
+        const pts = [];
+
+        for (const d of dealers) {
+          const m = L.marker([d.lat, d.lng]).addTo(layer);
+          m.bindPopup(popupHtml(d));
+          pts.push([d.lat, d.lng]);
+        }
+
+        if (pts.length) map.fitBounds(pts, { padding: [30, 30] });
+      }
+
+      loadDealers();
+      setInterval(loadDealers, 5 * 60 * 1000); // refresh every 5 minutes
+    </script>
+  </body>
+</html>
