@@ -1,3 +1,10 @@
+console.log("ENV CHECK", {
+  hasToken: !!process.env.AIRTABLE_TOKEN,
+  tokenLen: process.env.AIRTABLE_TOKEN ? process.env.AIRTABLE_TOKEN.length : 0,
+  base: process.env.AIRTABLE_BASE_ID,
+  table: process.env.AIRTABLE_TABLE_ID,
+});
+
 // netlify/functions/dealers.js
 
 export const handler = async () => {
@@ -56,3 +63,4 @@ export const handler = async () => {
     };
   }
 };
+
