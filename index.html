@@ -1,55 +1,106 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Dealer Locator</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Dealer Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <style>
-      body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
-      #map { height: 100vh; width: 100vw; }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-      const map = L.map("map").setView([20, 0], 2);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    .popup strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .popup div {
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+  </style>
+</head>
+<body>
 
-      const layer = L.layerGroup().addTo(map);
+<div id="map"></div>
 
-      function popupHtml(d) {
-        return `
-          <div>
-            <strong>${d.name || ""}</strong><br/>
-            ${d.address ? `${d.address}<br/>` : ""}
-            ${d.phone ? `${d.phone}<br/>` : ""}
-            ${d.website ? `<a href="${d.website}" target="_blank" rel="noopener">Website</a>` : ""}
-          </div>
-        `;
+<!-- Leaflet JS -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+
+<script>
+  // 1) Create map (temporary center; will auto-fit later)
+  const map = L.map("map").setView([54.5, -3], 6);
+
+  // 2) Add OpenStreetMap tiles
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  // 3) Popup HTML builder
+  function popupHtml(d) {
+    return `
+      <div class="popup">
+        <strong>${d.name || "Dealer"}</strong>
+        ${d.address ? `<div>${d.address}</div>` : ""}
+        ${d.postcode ? `<div>${d.postcode}</div>` : ""}
+        ${d.auditor ? `<div><strong>Auditor:</strong> ${d.auditor}</div>` : ""}
+      </div>
+    `;
+  }
+
+  // 4) Load dealers from Netlify function
+  async function loadDealers() {
+    try {
+      const res = await fetch("/.netlify/functions/dealers");
+      if (!res.ok) throw new Error("Failed to load dealers");
+
+      const data = await res.json();
+      const dealers = data.dealers || [];
+
+      if (!dealers.length) {
+        console.warn("No dealers returned");
+        return;
       }
 
-      async function loadDealers() {
-        const res = await fetch("/.netlify/functions/dealers");
-        const { dealers } = await res.json();
+      const bounds = [];
 
-        layer.clearLayers();
-        const pts = [];
+      dealers.forEach(d => {
+        if (!Number.isFinite(d.lat) || !Number.isFinite(d.lng)) return;
 
-        for (const d of dealers) {
-          const m = L.marker([d.lat, d.lng]).addTo(layer);
-          m.bindPopup(popupHtml(d));
-          pts.push([d.lat, d.lng]);
-        }
+        const marker = L.marker([d.lat, d.lng]).addTo(map);
+        marker.bindPopup(popupHtml(d));
+        bounds.push([d.lat, d.lng]);
+      });
 
-        if (pts.length) map.fitBounds(pts, { padding: [30, 30] });
+      // 5) Fit map to all markers
+      if (bounds.length) {
+        map.fitBounds(bounds, { padding: [40, 40] });
       }
+    } catch (err) {
+      console.error("Error loading dealers:", err);
+    }
+  }
 
-      loadDealers();
-      setInterval(loadDealers, 5 * 60 * 1000); // refresh every 5 minutes
-    </script>
-  </body>
+  loadDealers();
+</script>
+
+</body>
 </html>
