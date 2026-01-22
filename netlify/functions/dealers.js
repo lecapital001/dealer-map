@@ -29,27 +29,40 @@ exports.handler = async () => {
 
     const data = await res.json();
 
-    const dealers = (data.records || [])
-      .map((r) => {
-        const lat = Number(r.fields["Latitude"]);
-        const lng = Number(r.fields["Longitude"]);
+    // 1) Map fields
+    const rows = (data.records || []).map((r) => {
+      const lat = Number(r.fields["Latitude"]);
+      const lng = Number(r.fields["Longitude"]);
 
-        return {
-          id: r.id, // Airtable record id
-          dealerId: r.fields["Dealer ID"],
-          name: r.fields["Dealer Name"],
-          address: r.fields["Site Address"],
-          postcode: r.fields["Postcode"],
-          auditFrequency: r.fields["Audit Frequency"],
-          status: r.fields["Dealer Status"],
-          lat,
-          lng,
-        };
-      })
-      // Must have valid coordinates
+      return {
+        id: r.id, // Airtable record id
+        dealerId: r.fields["Dealer ID"],
+        name: r.fields["Dealer Name"],
+        address: r.fields["Site Address"],
+        postcode: r.fields["Postcode"],
+        auditFrequency: r.fields["Audit Frequency"],
+        status: r.fields["Dealer Status"],
+        lat,
+        lng,
+      };
+    });
+
+    // 2) Filters (coords + active)
+    const filtered = rows
       .filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng))
-      // Only show Active dealers (change this if your status values differ)
-      .filter((d) => String(d.status || "").trim().toLowerCase() === "active");
+      .filter((d) => String(d.status || "").trim().toLowerCase() === "active")
+      .filter((d) => d.dealerId); // must have Dealer ID for dedupe
+
+    // 3) Deduplicate: keep FIRST entry per Dealer ID (primary = first row returned)
+    const seen = new Set();
+    const dealers = [];
+
+    for (const d of filtered) {
+      const key = String(d.dealerId).trim();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      dealers.push(d);
+    }
 
     return {
       statusCode: 200,
