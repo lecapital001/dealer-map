@@ -36,16 +36,18 @@ exports.handler = async () => {
     const data = await res.json();
 
     const dealers = (data.records || [])
-      .map((r) => ({
-        id: r.id,
-        name: r.fields.Name,
-        lat: Number(r.fields.Latitude),
-        lng: Number(r.fields.Longitude),
-        address: r.fields.Address,
-        website: r.fields.Website,
-        phone: r.fields.Phone,
-      }))
-      .filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng));
+  .map((r) => ({
+    id: r.id, // Airtable record id
+    dealerId: r.fields["Dealer ID"],
+    name: r.fields["Dealer Name"],
+    address: r.fields["Site Address"],
+    postcode: r.fields["Postcode"],
+    auditFrequency: r.fields["Audit Frequency"],
+    status: r.fields["Dealer Status"],
+    lat: Number(r.fields["Latitude"]),
+    lng: Number(r.fields["Longitude"]),
+  }))
+  .filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng));
 
     return {
       statusCode: 200,
@@ -63,3 +65,4 @@ exports.handler = async () => {
     };
   }
 };
+
