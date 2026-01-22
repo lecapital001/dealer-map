@@ -54,6 +54,7 @@ exports.handler = async () => {
         name: dealerName,
         address: r.fields["Site Address"],
         postcode: r.fields["Postcode"],
+        auditor: r.fields["Auditor"],
         auditFrequency: r.fields["Audit Frequency"],
         status: r.fields["Dealer Status"],
         lat,
@@ -105,3 +106,4 @@ exports.handler = async () => {
     };
   }
 };
+
