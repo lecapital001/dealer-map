@@ -1,19 +1,19 @@
-console.log("ENV CHECK", {
-  hasToken: !!process.env.AIRTABLE_TOKEN,
-  tokenLen: process.env.AIRTABLE_TOKEN ? process.env.AIRTABLE_TOKEN.length : 0,
-  base: process.env.AIRTABLE_BASE_ID,
-  table: process.env.AIRTABLE_TABLE_ID,
-});
-
 // netlify/functions/dealers.js
 
-export const handler = async () => {
+exports.handler = async () => {
   try {
+    console.log("ENV CHECK", {
+      hasToken: !!process.env.AIRTABLE_TOKEN,
+      tokenLen: process.env.AIRTABLE_TOKEN ? process.env.AIRTABLE_TOKEN.length : 0,
+      hasBase: !!process.env.AIRTABLE_BASE_ID,
+      hasTable: !!process.env.AIRTABLE_TABLE_ID,
+    });
+
     const BASE_ID = process.env.AIRTABLE_BASE_ID;
     const TABLE_ID = process.env.AIRTABLE_TABLE_ID;
     const TOKEN = process.env.AIRTABLE_TOKEN;
 
-    // If you do NOT have a view called "Published", set this to null
+    // Change to null if you do NOT have a view named "Published"
     const view = "Published";
 
     const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}`);
@@ -63,4 +63,3 @@ export const handler = async () => {
     };
   }
 };
-
