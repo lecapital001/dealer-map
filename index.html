@@ -1,24 +1,3 @@
-// ---- Parent control (postMessage) ----
-
-// Tell parent we're ready to receive commands
-window.parent?.postMessage({ type: "DEALER_MAP_READY" }, "*");
-
-// Accept parent commands to change view
-window.addEventListener("message", (event) => {
-  // Optional lock-down (recommended once working):
-  // if (event.origin !== "https://YOUR-PARENT-SITE.com") return;
-
-  const msg = event.data;
-  if (!msg || msg.type !== "SET_VIEW") return;
-
-  const lat = Number(msg.lat);
-  const lng = Number(msg.lng);
-  const zoom = Number(msg.zoom);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(zoom)) return;
-
-  map.setView([lat, lng], zoom, { animate: true });
-});
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,23 +14,10 @@ window.addEventListener("message", (event) => {
   />
 
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-    .popup strong {
-      display: block;
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
-    .popup div {
-      font-size: 13px;
-      margin-bottom: 2px;
-    }
+    html, body { height: 100%; margin: 0; }
+    #map { width: 100%; height: 100%; }
+    .popup strong { display:block; font-size:14px; margin-bottom:4px; }
+    .popup div { font-size:13px; margin-bottom:2px; }
   </style>
 </head>
 <body>
@@ -66,14 +32,44 @@ window.addEventListener("message", (event) => {
 ></script>
 
 <script>
-  // 1) Create map (temporary center; will auto-fit later)
-  const map = L.map("map").setView([54.5, -3], 6);
+  // 1) Create map (default UK view)
+  const map = L.map("map", {
+    zoomControl: true
+  }).setView([54.5, -3], 6);
 
   // 2) Add OpenStreetMap tiles
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18,
     attribution: "&copy; OpenStreetMap contributors"
   }).addTo(map);
+
+  // ---- Parent control (postMessage) ----
+  // IMPORTANT: This must be inside a <script> and after `map` exists.
+
+  let parentHasControl = false; // once parent sets view, don't auto-fitBounds anymore
+
+  // Tell parent we're ready to receive commands
+  window.parent?.postMessage({ type: "DEALER_MAP_READY" }, "*");
+
+  // Accept parent commands to change view
+  window.addEventListener("message", (event) => {
+    const msg = event.data;
+    if (!msg || msg.type !== "SET_VIEW") return;
+
+    const lat = Number(msg.lat);
+    const lng = Number(msg.lng);
+    const zoom = Number(msg.zoom);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(zoom)) return;
+
+    parentHasControl = true;
+
+    // Stop any ongoing fly/animations that might be mid-fit
+    map.stop();
+
+    // Smooth pan/zoom
+    map.setView([lat, lng], zoom, { animate: true });
+  });
 
   // 3) Popup HTML builder
   function popupHtml(d) {
@@ -90,7 +86,7 @@ window.addEventListener("message", (event) => {
   // 4) Load dealers from Netlify function
   async function loadDealers() {
     try {
-      const res = await fetch("/.netlify/functions/dealers");
+      const res = await fetch("/.netlify/functions/dealers", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load dealers");
 
       const data = await res.json();
@@ -102,7 +98,6 @@ window.addEventListener("message", (event) => {
       }
 
       const bounds = [];
-
       dealers.forEach(d => {
         if (!Number.isFinite(d.lat) || !Number.isFinite(d.lng)) return;
 
@@ -111,8 +106,8 @@ window.addEventListener("message", (event) => {
         bounds.push([d.lat, d.lng]);
       });
 
-      // 5) Fit map to all markers
-      if (bounds.length) {
+      // 5) Fit map to all markers ONLY if parent hasn't started controlling the view
+      if (!parentHasControl && bounds.length) {
         map.fitBounds(bounds, { padding: [40, 40] });
       }
     } catch (err) {
