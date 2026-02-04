@@ -1,17 +1,30 @@
 // netlify/functions/dealers.js
 
-exports.handler = async () => {
+const CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET,OPTIONS",
+  "access-control-allow-headers": "content-type,authorization",
+};
+
+exports.handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers: { ...CORS_HEADERS }, body: "" };
+  }
+
   try {
     const BASE_ID = process.env.AIRTABLE_BASE_ID;
     const TABLE_ID = process.env.AIRTABLE_TABLE_ID;
     const TOKEN = process.env.AIRTABLE_TOKEN;
 
-    // If you have a view called "Published", keep it.
-    // If you don't, set to null.
-    const view = "Published";
+    if (!BASE_ID || !TABLE_ID || !TOKEN) {
+      return {
+        statusCode: 500,
+        headers: { ...CORS_HEADERS, "content-type": "application/json" },
+        body: JSON.stringify({ error: "Missing Airtable env vars" }),
+      };
+    }
 
-    // Airtable returns max 100 records per page.
-    // We must loop using the `offset` value to get ALL records.
+    const view = "Published";
     const pageSize = 100;
     let offset = null;
     const allRecords = [];
@@ -30,7 +43,7 @@ exports.handler = async () => {
         const text = await res.text();
         return {
           statusCode: res.status,
-          headers: { "content-type": "text/plain" },
+          headers: { ...CORS_HEADERS, "content-type": "text/plain" },
           body: text,
         };
       }
@@ -40,18 +53,14 @@ exports.handler = async () => {
       offset = data.offset || null;
     } while (offset);
 
-    // Map Airtable fields to what your frontend expects
     const rows = allRecords.map((r) => {
       const lat = Number(r.fields["Latitude"]);
       const lng = Number(r.fields["Longitude"]);
 
-      const dealerId = r.fields["Dealer ID"];
-      const dealerName = r.fields["Dealer Name"];
-
       return {
-        id: r.id, // Airtable record id
-        dealerId,
-        name: dealerName,
+        id: r.id,
+        dealerId: r.fields["Dealer ID"],
+        name: r.fields["Dealer Name"],
         address: r.fields["Site Address"],
         postcode: r.fields["Postcode"],
         auditor: r.fields["Auditor"],
@@ -62,24 +71,16 @@ exports.handler = async () => {
       };
     });
 
-    // Filters:
-    // - Must have valid coords
-    // - Must be Active
     const filtered = rows
       .filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng))
       .filter((d) => String(d.status || "").trim().toLowerCase() === "active");
 
-    // Keep only ONE "primary" site per dealer:
-    // - Primary site = first record Airtable returns for that dealer
-    // - So: SORT your Airtable view so the primary site appears first.
-    //
-    // Dedupe key uses Dealer ID, and falls back to Dealer Name if Dealer ID is blank.
     const seen = new Set();
     const dealers = [];
 
     for (const d of filtered) {
       const key = String(d.dealerId || d.name || "").trim().toLowerCase();
-      if (!key) continue; // skip if both Dealer ID and Dealer Name are missing
+      if (!key) continue;
       if (seen.has(key)) continue;
       seen.add(key);
       dealers.push(d);
@@ -88,6 +89,7 @@ exports.handler = async () => {
     return {
       statusCode: 200,
       headers: {
+        ...CORS_HEADERS,
         "content-type": "application/json",
         "cache-control": "public, max-age=60",
       },
@@ -101,9 +103,8 @@ exports.handler = async () => {
   } catch (err) {
     return {
       statusCode: 500,
-      headers: { "content-type": "application/json" },
+      headers: { ...CORS_HEADERS, "content-type": "application/json" },
       body: JSON.stringify({ error: String(err) }),
     };
   }
 };
-
