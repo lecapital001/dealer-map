@@ -1,3 +1,24 @@
+// ---- Parent control (postMessage) ----
+
+// Tell parent we're ready to receive commands
+window.parent?.postMessage({ type: "DEALER_MAP_READY" }, "*");
+
+// Accept parent commands to change view
+window.addEventListener("message", (event) => {
+  // Optional lock-down (recommended once working):
+  // if (event.origin !== "https://YOUR-PARENT-SITE.com") return;
+
+  const msg = event.data;
+  if (!msg || msg.type !== "SET_VIEW") return;
+
+  const lat = Number(msg.lat);
+  const lng = Number(msg.lng);
+  const zoom = Number(msg.zoom);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(zoom)) return;
+
+  map.setView([lat, lng], zoom, { animate: true });
+});
 <!DOCTYPE html>
 <html lang="en">
 <head>
