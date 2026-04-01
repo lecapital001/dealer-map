@@ -16,11 +16,19 @@
     :root {
       --brand: #8ed9c8;
       --brand-deep: #49c9ad;
+      --map-bg: #dfe8e5;
     }
 
-    html, body { height: 100%; margin: 0; }
-    #map { width: 100%; height: 100%; }
-    .leaflet-tile-pane { opacity: 0.88; filter: saturate(0.82) brightness(1.03); }
+    html, body { height: 100%; margin: 0; background: var(--map-bg); }
+    #map {
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0) 28%),
+        radial-gradient(circle at 78% 30%, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 26%),
+        linear-gradient(180deg, #e5edeb 0%, #dbe5e2 100%);
+    }
+    .leaflet-tile-pane { opacity: 0.94; filter: saturate(0.92) brightness(0.98) contrast(1.02); }
     .popup strong {
       display:block;
       font-size:14px;
@@ -64,10 +72,18 @@
     zoomControl: true
   }).setView([54.5, -3], 6);
 
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
     maxZoom: 19,
     subdomains: "abcd",
     attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
+  }).addTo(map);
+
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png", {
+    maxZoom: 19,
+    subdomains: "abcd",
+    attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+    pane: "overlayPane",
+    opacity: 0.72
   }).addTo(map);
 
   let parentHasControl = false;
