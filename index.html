@@ -31,23 +31,6 @@
       font-size:13px;
       margin-bottom:2px;
     }
-
-    .leaflet-div-icon.dealer-marker {
-      background: transparent;
-      border: 0;
-    }
-
-    .dealer-dot {
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      background: radial-gradient(circle at 35% 35%, #ffffff 0%, #a6f0de 20%, #58cdb4 42%, var(--brand-deep) 74%, #143f37 100%);
-      border: 3px solid rgba(255,255,255,1);
-      box-shadow:
-        0 0 0 5px rgba(47,143,124,0.22),
-        0 0 18px rgba(47,143,124,0.34),
-        0 6px 12px rgba(10,32,28,0.22);
-    }
   </style>
 </head>
 <body>
@@ -100,12 +83,14 @@
     `;
   }
 
-  const dealerMarkerIcon = L.divIcon({
-    className: "dealer-marker",
-    html: '<div class="dealer-dot"></div>',
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -14]
+  const dealerMarkerIcon = L.icon({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [20, 33],
+    iconAnchor: [10, 33],
+    popupAnchor: [1, -28],
+    shadowSize: [33, 33]
   });
 
   async function loadDealers() {
