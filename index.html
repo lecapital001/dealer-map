@@ -15,20 +15,12 @@
   <style>
     :root {
       --brand: #8ed9c8;
-      --brand-deep: #49c9ad;
-      --map-bg: #cfdcda;
+      --brand-deep: #2f8f7c;
     }
 
-    html, body { height: 100%; margin: 0; background: var(--map-bg); }
-    #map {
-      width: 100%;
-      height: 100%;
-      background:
-        radial-gradient(circle at 20% 18%, rgba(255,255,255,0.52) 0%, rgba(255,255,255,0) 28%),
-        radial-gradient(circle at 78% 30%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 26%),
-        linear-gradient(180deg, #d8e3e1 0%, #cad8d5 100%);
-    }
-    .leaflet-tile-pane { opacity: 0.97; filter: saturate(0.98) brightness(0.93) contrast(1.08); }
+    html, body { height: 100%; margin: 0; }
+    #map { width: 100%; height: 100%; }
+    .leaflet-tile-pane { opacity: 1; filter: none; }
     .popup strong {
       display:block;
       font-size:14px;
@@ -49,11 +41,11 @@
       width: 12px;
       height: 12px;
       border-radius: 999px;
-      background: radial-gradient(circle at 35% 35%, #f7fffd 0%, var(--brand) 45%, var(--brand-deep) 100%);
+      background: radial-gradient(circle at 35% 35%, #f2fffb 0%, #66d3bd 28%, var(--brand-deep) 78%, #1f6658 100%);
       border: 2px solid rgba(255,255,255,0.95);
       box-shadow:
-        0 0 0 3px rgba(142,217,200,0.12),
-        0 0 12px rgba(73,201,173,0.18);
+        0 0 0 3px rgba(47,143,124,0.16),
+        0 0 10px rgba(31,102,88,0.20);
     }
   </style>
 </head>
@@ -72,18 +64,10 @@
     zoomControl: true
   }).setView([54.5, -3], 6);
 
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
-    maxZoom: 19,
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    maxZoom: 20,
     subdomains: "abcd",
     attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
-  }).addTo(map);
-
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png", {
-    maxZoom: 19,
-    subdomains: "abcd",
-    attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-    pane: "overlayPane",
-    opacity: 0.8
   }).addTo(map);
 
   let parentHasControl = false;
