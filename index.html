@@ -38,14 +38,15 @@
     }
 
     .dealer-dot {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border-radius: 999px;
-      background: radial-gradient(circle at 35% 35%, #f4fffc 0%, #77dbc6 24%, var(--brand-deep) 72%, #184f45 100%);
-      border: 2px solid rgba(255,255,255,0.98);
+      background: radial-gradient(circle at 35% 35%, #ffffff 0%, #a6f0de 20%, #58cdb4 42%, var(--brand-deep) 74%, #143f37 100%);
+      border: 3px solid rgba(255,255,255,1);
       box-shadow:
-        0 0 0 4px rgba(47,143,124,0.18),
-        0 0 14px rgba(24,79,69,0.26);
+        0 0 0 5px rgba(47,143,124,0.22),
+        0 0 18px rgba(47,143,124,0.34),
+        0 6px 12px rgba(10,32,28,0.22);
     }
   </style>
 </head>
@@ -102,9 +103,9 @@
   const dealerMarkerIcon = L.divIcon({
     className: "dealer-marker",
     html: '<div class="dealer-dot"></div>',
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
-    popupAnchor: [0, -12]
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -14]
   });
 
   async function loadDealers() {
