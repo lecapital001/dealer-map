@@ -5,7 +5,6 @@
   <title>Dealer Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -24,7 +23,6 @@
 
 <div id="map"></div>
 
-<!-- Leaflet JS -->
 <script
   src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -32,26 +30,19 @@
 ></script>
 
 <script>
-  // 1) Create map (default UK view)
   const map = L.map("map", {
     zoomControl: true
   }).setView([54.5, -3], 6);
 
-  // 2) Add OpenStreetMap tiles
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18,
     attribution: "&copy; OpenStreetMap contributors"
   }).addTo(map);
 
-  // ---- Parent control (postMessage) ----
-  // IMPORTANT: This must be inside a <script> and after `map` exists.
+  let parentHasControl = false;
 
-  let parentHasControl = false; // once parent sets view, don't auto-fitBounds anymore
-
-  // Tell parent we're ready to receive commands
   window.parent?.postMessage({ type: "DEALER_MAP_READY" }, "*");
 
-  // Accept parent commands to change view
   window.addEventListener("message", (event) => {
     const msg = event.data;
     if (!msg || msg.type !== "SET_VIEW") return;
@@ -63,15 +54,10 @@
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(zoom)) return;
 
     parentHasControl = true;
-
-    // Stop any ongoing fly/animations that might be mid-fit
     map.stop();
-
-    // Smooth pan/zoom
     map.setView([lat, lng], zoom, { animate: true });
   });
 
-  // 3) Popup HTML builder
   function popupHtml(d) {
     return `
       <div class="popup">
@@ -83,7 +69,16 @@
     `;
   }
 
-  // 4) Load dealers from Netlify function
+  const dealerMarkerIcon = L.icon({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [20, 33],
+    iconAnchor: [10, 33],
+    popupAnchor: [1, -28],
+    shadowSize: [33, 33]
+  });
+
   async function loadDealers() {
     try {
       const res = await fetch("/.netlify/functions/dealers", { cache: "no-store" });
@@ -101,12 +96,13 @@
       dealers.forEach(d => {
         if (!Number.isFinite(d.lat) || !Number.isFinite(d.lng)) return;
 
-        const marker = L.marker([d.lat, d.lng]).addTo(map);
+        const marker = L.marker([d.lat, d.lng], {
+          icon: dealerMarkerIcon
+        }).addTo(map);
         marker.bindPopup(popupHtml(d));
         bounds.push([d.lat, d.lng]);
       });
 
-      // 5) Fit map to all markers ONLY if parent hasn't started controlling the view
       if (!parentHasControl && bounds.length) {
         map.fitBounds(bounds, { padding: [40, 40] });
       }
