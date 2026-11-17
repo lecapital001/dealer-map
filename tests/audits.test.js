@@ -47,3 +47,12 @@ test('unconfigured fields do not claim zero; writes are rejected', async () => {
   assert.equal((await handler({ httpMethod: 'POST' })).statusCode, 405);
   assert.equal((await handler({ httpMethod: 'OPTIONS' })).statusCode, 204);
 });
+test('diagnostics distinguish table access, missing fields and date-filter failures without exposing upstream bodies', async () => {
+  for (const [status, type, expected] of [[403, 'INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND', 'AUDIT_TABLE_ACCESS'], [422, 'UNKNOWN_FIELD_NAME', 'AUDIT_FIELDS_MISSING'], [422, 'INVALID_FILTER_BY_FORMULA', 'AUDIT_FILTER_REJECTED'], [401, 'AUTHENTICATION_REQUIRED', 'AIRTABLE_AUTH']]) {
+    const handler = createHandler({ env, now: () => now, fetcher: async () => ({ ok: false, status, json: async () => ({ error: { type, message: 'private details test-secret' } }) }) });
+    const res = await handler({ httpMethod: 'GET' });
+    assert.equal(JSON.parse(res.body).code, expected);
+    assert(!res.body.includes('private details')); assert(!res.body.includes('test-secret'));
+    assert(!res.body.includes('completedToday'));
+  }
+});

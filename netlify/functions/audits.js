@@ -20,7 +20,18 @@ function createHandler({ env = process.env, fetcher = fetch, now = () => new Dat
         url.searchParams.set('filterByFormula', `OR(IS_SAME({Audit Date},DATETIME_PARSE("${today}"),'day'),AND({${fields.completedAt}},DATETIME_FORMAT(SET_TIMEZONE({${fields.completedAt}},'Europe/London'),'YYYY-MM-DD')='${today}'))`);
         if (offset) url.searchParams.set('offset', offset);
         const res = await fetcher(url, { headers: { Authorization: `Bearer ${token}` }, signal });
-        if (!res.ok) throw new Error('Upstream unavailable');
+        if (!res.ok) {
+          // Classify known upstream failures without forwarding bodies or credentials.
+          const upstream = await res.json().catch(() => ({}));
+          const type = upstream?.error?.type;
+          let code = 'AIRTABLE_UNAVAILABLE', message = 'Airtable could not refresh audit data.';
+          if (res.status === 401) { code = 'AIRTABLE_AUTH'; message = 'The existing Airtable token was not accepted.'; }
+          else if (res.status === 403 || res.status === 404) { code = 'AUDIT_TABLE_ACCESS'; message = 'Check the Audit Visits table ID and the existing token permission to read that table in this base.'; }
+          else if (type === 'UNKNOWN_FIELD_NAME') { code = 'AUDIT_FIELDS_MISSING'; message = 'A reporting field is missing. Check Dealer, Audit Date, Visit Status, Completed At and Vehicles Counted, including configured field-name overrides.'; }
+          else if (type === 'INVALID_FILTER_BY_FORMULA') { code = 'AUDIT_FILTER_REJECTED'; message = 'Airtable rejected the date filter. Check that the completion field exists and is a date with time.'; }
+          else if (res.status === 429) { code = 'AIRTABLE_RATE_LIMIT'; message = 'Airtable is rate limiting requests. The display will retry.'; }
+          return response(503, { available: false, code, error: message });
+        }
         const data = await res.json();
         if (!Array.isArray(data.records) || data.records.some(r => !r?.id || !r.fields)) throw new Error('Invalid data');
         records.push(...data.records);
