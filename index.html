@@ -31,11 +31,17 @@
       font-size:13px;
       margin-bottom:2px;
     }
+    .audit-progress{position:absolute;bottom:28px;left:12px;z-index:800;max-width:calc(100vw - 24px);padding:14px 18px;border:1px solid #badbd0;border-radius:12px;background:#f9fffcf2;color:#153d43;font:14px/1.4 Segoe UI,Arial,sans-serif;box-shadow:0 4px 24px #0002}
+    .audit-metrics{display:flex;gap:24px;flex-wrap:wrap}.audit-metrics strong{display:block;font-size:26px;font-variant-numeric:tabular-nums}.audit-progress small{display:block;margin-top:8px;color:#4b6668}
   </style>
 </head>
 <body>
 
 <div id="map"></div>
+<section class="audit-progress" data-audit-dashboard="/.netlify/functions/audits" aria-label="Today's audits">
+ <div class="audit-metrics"><div><strong data-audit-value="completed">—</strong>Audits completed today</div><div><strong data-audit-value="vehicles">—</strong>Vehicles counted today</div><div><strong data-audit-value="scheduled">—</strong>Scheduled today</div></div>
+ <small data-audit-note>Connecting to audit reporting…</small>
+</section>
 
 <script
   src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -73,14 +79,13 @@
   });
 
   function popupHtml(d) {
-    return `
-      <div class="popup">
-        <strong>${d.name || "Dealer"}</strong>
-        ${d.address ? `<div>${d.address}</div>` : ""}
-        ${d.postcode ? `<div>${d.postcode}</div>` : ""}
-        ${d.auditor ? `<div><strong>Auditor:</strong> ${d.auditor}</div>` : ""}
-      </div>
-    `;
+    const box=document.createElement('div');box.className='popup';
+    const name=document.createElement('strong');name.textContent=d.name||'Dealer';box.append(name);
+    for(const value of [d.address,d.postcode,d.auditor&&'Auditor: '+d.auditor])if(value){const line=document.createElement('div');line.textContent=value;box.append(line);}
+    const audit=window.DealerAuditData?.dealers?.[d.id];
+    const line=document.createElement('div');line.textContent=audit?'Audit: '+({completed:'Completed',in_progress:'In progress',not_started:'Not started'}[audit.status]||'Unknown')+' · '+audit.completed+' completed today':window.DealerAuditData?'No audit scheduled or completed today':'Audit status unavailable';box.append(line);
+    if(audit?.completed){const vehicles=document.createElement('div');vehicles.textContent='Vehicles counted today: '+(audit.missingVehicleCounts?'Awaiting count':audit.vehiclesCounted);box.append(vehicles);}
+    return box;
   }
 
   const dealerMarkerIcon = L.icon({
@@ -93,7 +98,9 @@
     shadowSize: [33, 33]
   });
 
+  const dealerMarkers=new Map();let mapPositioned=false,loading=false;
   async function loadDealers() {
+    if(loading)return;loading=true;
     try {
       const res = await fetch("/.netlify/functions/dealers", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load dealers");
@@ -106,27 +113,30 @@
         return;
       }
 
-      const bounds = [];
+      const bounds = [],present=new Set();
       dealers.forEach(d => {
         if (!Number.isFinite(d.lat) || !Number.isFinite(d.lng)) return;
 
-        const marker = L.marker([d.lat, d.lng], {
-          icon: dealerMarkerIcon
-        }).addTo(map);
-        marker.bindPopup(popupHtml(d));
+        const key=d.id||String(d.dealerId);present.add(key);
+        let entry=dealerMarkers.get(key);
+        if(!entry){entry={marker:L.marker([d.lat,d.lng],{icon:dealerMarkerIcon}).addTo(map),dealer:d};dealerMarkers.set(key,entry);entry.marker.bindPopup(popupHtml(d));}
+        else{entry.dealer=d;const at=entry.marker.getLatLng();if(at.lat!==d.lat||at.lng!==d.lng)entry.marker.setLatLng([d.lat,d.lng]);entry.marker.setPopupContent(popupHtml(d));}
         bounds.push([d.lat, d.lng]);
       });
 
-      if (!parentHasControl && bounds.length) {
-        map.fitBounds(bounds, { padding: [40, 40] });
+      for(const [key,entry]of dealerMarkers)if(!present.has(key)){map.removeLayer(entry.marker);dealerMarkers.delete(key);}
+      if (!mapPositioned && !parentHasControl && bounds.length) {
+        map.fitBounds(bounds, { padding: [40, 40] });mapPositioned=true;
       }
     } catch (err) {
       console.error("Error loading dealers:", err);
-    }
+    }finally{loading=false;}
   }
 
-  loadDealers();
+  loadDealers();setInterval(()=>{if(!document.hidden)loadDealers();},60000);
+  document.addEventListener("dealer-audits-updated",()=>{for(const entry of dealerMarkers.values())entry.marker.setPopupContent(popupHtml(entry.dealer));});
 </script>
 
+<script src="audit-progress.js"></script>
 </body>
 </html>
