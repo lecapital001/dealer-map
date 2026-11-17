@@ -39,7 +39,7 @@
 
 <div id="map"></div>
 <section class="audit-progress" data-audit-dashboard="/.netlify/functions/audits" aria-label="Today's audits">
- <div class="audit-metrics"><div><strong data-audit-value="completed">—</strong>Audits completed today</div><div><strong data-audit-value="vehicles">—</strong>Vehicles counted today</div><div><strong data-audit-value="scheduled">—</strong>Scheduled today</div></div>
+ <div class="audit-metrics"><div><strong data-audit-value="completed">—</strong>Today’s audits completed</div><div><strong data-audit-value="vehicles">—</strong>Vehicles checked on today’s audits</div><div><strong data-audit-value="scheduled">—</strong>Scheduled today</div></div>
  <small data-audit-note>Connecting to audit reporting…</small>
 </section>
 
@@ -83,8 +83,8 @@
     const name=document.createElement('strong');name.textContent=d.name||'Dealer';box.append(name);
     for(const value of [d.address,d.postcode,d.auditor&&'Auditor: '+d.auditor])if(value){const line=document.createElement('div');line.textContent=value;box.append(line);}
     const audit=window.DealerAuditData?.dealers?.[d.id];
-    const line=document.createElement('div');line.textContent=audit?'Audit: '+({completed:'Completed',in_progress:'In progress',not_started:'Not started'}[audit.status]||'Unknown')+' · '+audit.completed+' completed today':window.DealerAuditData?'No audit scheduled or completed today':'Audit status unavailable';box.append(line);
-    if(audit?.completed){const vehicles=document.createElement('div');vehicles.textContent='Vehicles counted today: '+(audit.missingVehicleCounts?'Awaiting count':audit.vehiclesCounted);box.append(vehicles);}
+    const line=document.createElement('div');line.textContent=audit?'Audit: '+({completed:'Completed',in_progress:'In progress',not_started:'Not started',awaiting_review:'Awaiting review'}[audit.status]||'Unknown')+' · '+audit.completed+' of today’s audits complete':window.DealerAuditData?'No audit scheduled or completed today':'Audit status unavailable';box.append(line);
+    if(audit){const vehicles=document.createElement('div');vehicles.textContent='Vehicles checked on today’s audits: '+(audit.missingVehicleCounts?'Awaiting count':audit.vehiclesCounted);box.append(vehicles);}
     return box;
   }
 
