@@ -33,13 +33,14 @@
     }
     .audit-progress{position:absolute;bottom:28px;left:12px;z-index:800;max-width:calc(100vw - 24px);padding:14px 18px;border:1px solid #badbd0;border-radius:12px;background:#f9fffcf2;color:#153d43;font:14px/1.4 Segoe UI,Arial,sans-serif;box-shadow:0 4px 24px #0002}
     .audit-metrics{display:flex;gap:24px;flex-wrap:wrap}.audit-metrics strong{display:block;font-size:26px;font-variant-numeric:tabular-nums}.audit-progress small{display:block;margin-top:8px;color:#4b6668}
+.audit-meister-note{display:block;font-size:11px;color:#4b6668;margin-top:5px}.audit-meister{border-left:1px solid #badbd0;padding-left:18px}
   </style>
 </head>
 <body>
 
 <div id="map"></div>
 <section class="audit-progress" data-audit-dashboard="/.netlify/functions/audits" aria-label="Today's audits">
- <div class="audit-metrics"><div><strong data-audit-value="completed">—</strong>Today’s audits completed</div><div><strong data-audit-value="vehicles">—</strong>Vehicles checked on today’s audits</div><div><strong data-audit-value="scheduled">—</strong>Scheduled today</div></div>
+ <div class="audit-metrics"><div><strong data-audit-value="completed">—</strong>Today’s audits completed</div><div><strong data-audit-value="vehicles">—</strong>Vehicles checked on today’s audits</div><div class="audit-meister" data-meister-dashboard="/.netlify/functions/meister"><strong data-meister-value>—</strong><span class="audit-metric-label">MEISTER checks today</span><span class="audit-meister-note" data-meister-note>Connecting…</span></div><div><strong data-audit-value="scheduled">—</strong>Scheduled today</div></div>
  <small data-audit-note>Connecting to audit reporting…</small>
 </section>
 
@@ -138,5 +139,6 @@
 </script>
 
 <script src="audit-progress.js"></script>
+<script src="meister-progress.js"></script>
 </body>
 </html>

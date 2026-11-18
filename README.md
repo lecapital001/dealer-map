@@ -53,3 +53,24 @@ retains labelled same-day figures on failure and clears yesterday’s totals.
 Run `node --test tests/*.test.js` with Node 22 or later. No install step is needed.
 Netlify publishes the map at / and serves both dealers and audits functions.
 The DAKboard widget uses the same audit endpoint.
+
+## MEISTER checks today
+
+GET /.netlify/functions/meister counts distinct vehicles with their recorded
+MEISTER Checked ? date equal to today in Europe/London. This is independent of
+scheduled audit dates and includes all completed checks, including failed results.
+It does not count the individual component answers as separate checks.
+
+The endpoint combines Vehicles (tbl94CHYOKqCxgqLc) and Audited Vehicles
+(tblWGNorphd092WF3), deduplicating archived rows against live rows through the
+Vehicle Record ID link. Historical MEISTER dates copied into a newer archive do
+not count. A vehicle checked more than once on the same date counts once. Checks
+not yet submitted to Airtable are not included. The field is date-only, so the
+comparison uses the recorded calendar date, not an inferred completion timestamp.
+
+It reuses AIRTABLE_TOKEN and AIRTABLE_BASE_ID. No new fields are needed. The token
+must read both tables; optional table overrides are in .env.example. It only reads
+the date and archive vehicle link. No vehicle details are returned to the browser.
+Failed or incomplete reads show unavailable, never a partial count. An archived
+check without one usable vehicle link makes the full total unknown and is flagged.
+The MEISTER tile refreshes independently, so its failure does not hide audit totals.
