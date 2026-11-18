@@ -14,6 +14,7 @@
     const note = root.querySelector('[data-audit-note]');
     if (!current) note.textContent = failed ? 'Audit reporting unavailable · setup or connection required' : 'Connecting to audit reporting…';
     else if (failed) note.textContent = 'Saved audit figures · retrying';
+    else if (snapshot.vehicleCountError) note.textContent = 'Vehicle archive unavailable · audit progress is current';
     else if (snapshot.missingVehicleCounts || snapshot.missingCompletionTimes) note.textContent = `${snapshot.missingVehicleCounts || 0} vehicle counts · ${snapshot.missingCompletionTimes || 0} completion times missing`;
     else if(snapshot.awaitingReviewToday) note.textContent = snapshot.awaitingReviewToday+' awaiting review · audits scheduled today · UK time';
     else note.textContent = 'Audits scheduled today · UK time · updated ' + new Date(snapshot.generatedAt).toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });

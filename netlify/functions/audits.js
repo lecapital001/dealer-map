@@ -1,4 +1,5 @@
 const { summarize, londonDay } = require('../../lib/audit-summary');
+const { countArchivedVehicles } = require('../../lib/archived-vehicle-count');
 const headers = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,OPTIONS', 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 const response = (statusCode, body) => ({ statusCode, headers, body: JSON.stringify(body) });
 function createHandler({ env = process.env, fetcher = fetch, now = () => new Date() } = {}) {
@@ -40,7 +41,23 @@ function createHandler({ env = process.env, fetcher = fetch, now = () => new Dat
         if (records.length > 20000) throw new Error('Too many rows');
         if (offset) { offsets.add(offset); await new Promise(resolve => setTimeout(resolve, 250)); }
       } while (offset);
-      return response(200, summarize(records, time, fields));
+      const summary = summarize(records, time, fields);
+      // Preserve visit rollups for dealer-level context, but use the LEAPS archive
+      // calculation for the dashboard's Vehicles checked KPI.
+      summary.scheduledVehiclesCountedToday = summary.vehiclesCountedToday;
+      summary.scheduledMissingVehicleCounts = summary.missingVehicleCounts;
+      summary.vehiclesCountedToday = null;
+      summary.knownVehiclesCountedToday = null;
+      summary.missingVehicleCounts = 0;
+      summary.vehicleCountBasis = 'Audited Vehicles records with Date Audited today in Europe/London';
+      try {
+        const count = await countArchivedVehicles({ base, token, table: env.AIRTABLE_AUDITED_VEHICLES_TABLE || 'tblWGNorphd092WF3', time, fetcher, signal });
+        summary.vehiclesCountedToday = count;
+        summary.knownVehiclesCountedToday = count;
+      } catch {
+        summary.vehicleCountError = 'VEHICLE_ARCHIVE_UNAVAILABLE';
+      }
+      return response(200, summary);
     } catch {
       return response(503, { available: false, error: 'Audit data could not be refreshed. Check the reporting fields and read access.' });
     }

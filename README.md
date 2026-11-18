@@ -18,15 +18,22 @@ Self Audit are not treated as completion states. Canceled/Cancelled visits are e
 
 ## What today means
 
-All metrics refer to visits with **Audit Date equal to today in Europe/London**.
-The labels say “Today’s audits completed” and “Vehicles checked on today’s audits”.
-Vehicle checks include work in progress, not just completed audits. Total Vehicles
-is a planned count and is never substituted for actual checked vehicles.
+- Today’s audits completed and Scheduled today use visits with Audit Date equal
+  to today in Europe/London. Completion states use the existing Visit Status.
+- **Vehicles checked today matches the LEAPS manager dashboard**: count records
+  in Audited Vehicles whose Date Audited falls today in Europe/London. It is not
+  a sum of Total Completed on scheduled visits and is not restricted to visits
+  originally scheduled for today. Each archive row counts, just as in LEAPS;
+  multiple archive appearances for the same vehicle are not collapsed.
+- The API preserves the visit rollup under scheduledVehiclesCountedToday, and
+  dealer popup counts retain that scheduled-visit scope. The headline vehicle KPI
+  uses the archive count. An archive read failure shows a dash, never a fallback
+  to the different scheduled-visit total. Audit progress remains available.
+- MEISTER uses its separate recorded check date; see below.
 
-The table has no actual completion timestamp. Consequently this dashboard cannot
-identify audits completed today that were scheduled for another day. It must not
-be described as an actual completion-date report. Reused visit records and changing
-rollups follow the current Audit Date and status stored by LEAPS.
+The audit table has no actual completion timestamp, so the audit completion
+figure is still scheduled-day progress. Vehicle checks use the archived audit date.
+These deliberately follow the respective date fields rather than inferring dates.
 
 ## Netlify configuration
 
@@ -46,7 +53,7 @@ linked dealer IDs/statuses. No individual audit notes, contacts or vehicle recor
 are returned. This endpoint is public like the existing dealer map.
 
 Multiple linked dealer records do not multiply the overall visit or vehicle totals.
-Missing counts show a dash and a missing-data note; a confirmed zero displays 0.
+Unavailable archive counts show a dash and a source warning; a confirmed empty archive result displays 0.
 Failed upstream reads return no partial totals. The browser polls every minute,
 retains labelled same-day figures on failure and clears yesterday’s totals.
 
